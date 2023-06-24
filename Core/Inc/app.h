@@ -15,5 +15,7 @@
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
+#include "servo_motor.h"
+#include "definition.h"
 
 #endif /* INC_APP_H_ */
