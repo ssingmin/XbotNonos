@@ -17,5 +17,8 @@
 #include "gpio.h"
 #include "servo_motor.h"
 #include "definition.h"
+#include "app_can.h"
+#include "app_ws2812b.h"
+#include "app_fan.h"
 
 #endif /* INC_APP_H_ */

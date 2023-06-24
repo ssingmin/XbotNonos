@@ -48,7 +48,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-volatile uint32_t sysTickCounter = 0;  // SysTick 타이머 값 저장 변수
+volatile uint32_t sysTickCounter = 0;  // SysTick ???���?? �?? ???�� �???��
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -61,14 +61,14 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN 0 */
 
 //void SysTick_Init(void) {
-//  SysTick->LOAD = SysTick_LOAD_RELOAD_Msk;  // 최대 값으로 설정
-//  SysTick->VAL = 0;                         // 초기 값 설정
-//  SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk |  // 클럭 소스로 CPU 클럭 선택
-//                  SysTick_CTRL_ENABLE_Msk;      // SysTick 타이머 활성화
+//  SysTick->LOAD = SysTick_LOAD_RELOAD_Msk;  // 최�? 값으�?? ?��?��
+//  SysTick->VAL = 0;                         // 초기 �?? ?��?��
+//  SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk |  // ?��?�� ?��?���?? CPU ?��?�� ?��?��
+//                  SysTick_CTRL_ENABLE_Msk;      // SysTick ???���?? ?��?��?��
 //}
 //
 //void SysTick_Handler(void) {
-//  sysTickCounter++;  // SysTick 타이머 값 증가
+//  sysTickCounter++;  // SysTick ???���?? �?? 증�?
 //}
 
 int _write(int file, char *ptr, int len)
@@ -101,7 +101,19 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+  HAL_Delay(1000);
+#if 0
+  MX_GPIO_Init();
+  MX_DMA_Init();
+  MX_USART3_UART_Init();
+  MX_USART2_UART_Init();
+  MX_TIM1_Init();
+  MX_I2C1_SMBUS_Init();
+  MX_CAN1_Init();
+  MX_TIM8_Init();
+  MX_TIM3_Init();
+  MX_TIM6_Init();
+#endif
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -114,6 +126,7 @@ int main(void)
   MX_CAN1_Init();
   MX_TIM8_Init();
   MX_TIM3_Init();
+  MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -123,8 +136,9 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-	  app();
+
     /* USER CODE BEGIN 3 */
+	  app();
   }
   /* USER CODE END 3 */
 }
