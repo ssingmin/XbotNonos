@@ -75,16 +75,26 @@ void sendCan(uint32_t ID, int8_t *buf, uint8_t len, uint8_t ext)
 	tCan_Tx_Header.IDE = ext ? CAN_ID_EXT : CAN_ID_STD;
 	tCan_Tx_Header.DLC = len;
 	tCan_Tx_Header.TransmitGlobalTime = DISABLE;
-
+#if 0
     dwTxMailBox = HAL_CAN_GetTxMailboxesFreeLevel(&hcan1);	//resolve the error situation
-    //printf("%d: cantx \n", osKernelGetTickCount());
+    printf("dwTxMailBox: %d\n", dwTxMailBox);
     if(dwTxMailBox == 0){}
     else
     {
         dwCheck = HAL_CAN_AddTxMessage(&hcan1, &tCan_Tx_Header, buf, &dwTxMailBox);
         if(dwCheck != HAL_OK){while(1){;}}
     }
-    //HAL_Delay(1);//must be
+       HAL_Delay(1);//must be
+#else
+	while(1){
+		dwTxMailBox = HAL_CAN_GetTxMailboxesFreeLevel(&hcan1);	//resolve the error situation
+		if(dwTxMailBox == 3){break;}
+		}
+    printf("dwTxMailBox: %d\n", dwTxMailBox);
+	dwCheck = HAL_CAN_AddTxMessage(&hcan1, &tCan_Tx_Header, buf, &dwTxMailBox);
+	if(dwCheck != HAL_OK){while(1){;}}
+
+#endif
 }
 
 void SDOMsg(uint8_t Node_id,uint16_t index, uint8_t subindex, uint32_t msg, uint8_t len)
