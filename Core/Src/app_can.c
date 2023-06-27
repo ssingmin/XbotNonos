@@ -90,6 +90,7 @@ void sendCan(uint32_t ID, int8_t *buf, uint8_t len, uint8_t ext)
 		dwTxMailBox = HAL_CAN_GetTxMailboxesFreeLevel(&hcan1);	//resolve the error situation
 		if(dwTxMailBox == 3){break;}
 		}
+
     printf("dwTxMailBox: %d\n", dwTxMailBox);
 	dwCheck = HAL_CAN_AddTxMessage(&hcan1, &tCan_Tx_Header, buf, &dwTxMailBox);
 	if(dwCheck != HAL_OK){while(1){;}}
