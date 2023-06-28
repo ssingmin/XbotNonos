@@ -25,6 +25,10 @@
 #include "usart.h"
 #include "gpio.h"
 
+#include <stdio.h>
+#include "stm32f4xx.h"
+#include "core_cm4.h"
+
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -71,11 +75,25 @@ void SystemClock_Config(void);
 //  sysTickCounter++;  // SysTick ???���?? �?? 증�?
 //}
 
-int _write(int file, char *ptr, int len)
+//int _write(int file, char *ptr, int len)
+//{
+//	HAL_UART_Transmit(&huart2, (uint8_t *)ptr, (uint16_t)len, 100);
+//	return (len);
+//}
+
+int _write(int file, char *ptr, int len)//485 task for nuri motor must change uart port
 {
-	HAL_UART_Transmit(&huart2, (uint8_t *)ptr, (uint16_t)len, 100);
-	return (len);
+	//HAL_UART_Transmit_DMA(&huart2, (uint8_t *)ptr, (uint16_t)len);
+//	HAL_UART_Transmit(&huart2, (uint8_t *)ptr, (uint16_t)len, 100);
+//	return (len);
+//
+	for(int i = 0; i < len; i++)
+	{
+		ITM_SendChar(*ptr++);
+	}
+	return len;
 }
+
 /* USER CODE END 0 */
 
 /**
@@ -138,6 +156,8 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+//	  printf("hihi\n");
+//	  HAL_Delay(100);
 	  app();
   }
   /* USER CODE END 3 */

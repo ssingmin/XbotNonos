@@ -75,7 +75,7 @@ void sendCan(uint32_t ID, int8_t *buf, uint8_t len, uint8_t ext)
 	tCan_Tx_Header.IDE = ext ? CAN_ID_EXT : CAN_ID_STD;
 	tCan_Tx_Header.DLC = len;
 	tCan_Tx_Header.TransmitGlobalTime = DISABLE;
-#if 0
+#if 1
     dwTxMailBox = HAL_CAN_GetTxMailboxesFreeLevel(&hcan1);	//resolve the error situation
     printf("dwTxMailBox: %d\n", dwTxMailBox);
     if(dwTxMailBox == 0){}
@@ -91,7 +91,7 @@ void sendCan(uint32_t ID, int8_t *buf, uint8_t len, uint8_t ext)
 		if(dwTxMailBox == 3){break;}
 		}
 
-    printf("dwTxMailBox: %d\n", dwTxMailBox);
+    //printf("dwTxMailBox: %d\n", dwTxMailBox);
 	dwCheck = HAL_CAN_AddTxMessage(&hcan1, &tCan_Tx_Header, buf, &dwTxMailBox);
 	if(dwCheck != HAL_OK){while(1){;}}
 

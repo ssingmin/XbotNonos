@@ -102,20 +102,23 @@ uint8_t g_Pre_ModeABCD = 0;
 //uint8_t g_EndMode = 2;
 //uint8_t g_timerflag = 2;
 
-uint8_t g_EndMode = 0;
-uint8_t g_timerflag = 0;
+uint8_t g_EndMode = 2;
+uint8_t g_timerflag = 2;
 
 int16_t g_SteDeg[4] = {0,};	//steering degree unit=0.01 degree
 
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)//sequence timer. generate per 1ms
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)//. generate per 500ms
 {
   if(htim->Instance == TIM6)
   {
 		g_timerflag++;
 		g_EndMode++;
-		if(g_timerflag>1){HAL_TIM_Base_Stop_IT (&htim6);}
+		if(g_timerflag>3){
+			printf("STOP\n");
+			HAL_TIM_Base_Stop_IT (&htim6);
+		}
+		printf("TCB %d %d\n", g_timerflag, g_EndMode);
   }
-
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
@@ -370,6 +373,15 @@ void Cal_Real_cmd(void)
 }
 
 
+void tmpbufdbg()
+{
+	printf("\n buf ");
+	for(int i=0;i<8;i++)
+	{
+		printf("%d ", g_canbuf[i]);
+	}
+	printf("  end\n");
+}
 void Canparsing()
 {
 	if(FLAG_RxCplt>0)	//real time, check stdid, extid
@@ -380,6 +392,7 @@ void Canparsing()
 			for(int i=0;i<8;i++){g_canbuf[i] = g_uCAN_Rx_Data[FLAG_RxCplt][i];}
 			if(g_tCan_Rx_Header[FLAG_RxCplt].StdId>g_tCan_Rx_Header[FLAG_RxCplt].ExtId){g_CanId = g_tCan_Rx_Header[FLAG_RxCplt].StdId;}//�????????????????체크
 			else {g_CanId = g_tCan_Rx_Header[FLAG_RxCplt].ExtId;}
+
 
 			switch(g_CanId)//parse
 			{
@@ -471,8 +484,9 @@ void app()
 			if((g_temp_w && (g_temp_x==0) && (g_temp_y==0)) || ( fabs((g_Tar_cmd_v_x*1000)/g_Tar_cmd_w)<LIMIT_MODE_C) )//MODE C
 			{
 			//if(Tar_cmd_w){
-
+				printf("g_Tar_cmd_v_x1: %d", g_Tar_cmd_v_x);
 				//printf("%d: t02 012 %d %d %d\n", HAL_GetTick(),(int)(g_Tar_cmd_v_x*1000),(int)(g_Tar_cmd_w*1000),(int)((g_Tar_cmd_v_x*1000)/g_Tar_cmd_w));
+
 				if((g_Pre_ModeABCD!=g_ModeABCD) || (g_EndMode==0)){
 					//printf("111osTimerStart: %d, %d\n", g_ModeABCD, g_Pre_ModeABCD);
 					g_Pre_ModeABCD = g_ModeABCD;
@@ -505,18 +519,18 @@ void app()
 			}
 
 			else {	//mode2
-
+				printf("g_1: %d %d %d %d \n", g_Pre_ModeABCD,g_ModeABCD,g_EndMode, g_timerflag);
 				if((g_Pre_ModeABCD!=g_ModeABCD) || (g_EndMode==0)){
-
+					printf("g_f: %d %d %d %d %d %d %d  2\n", g_Stop_flag,g_temp_x,g_temp_y,g_temp_w, g_Pre_ModeABCD, g_ModeABCD, g_EndMode);
 					//printf("%d:111osTimerStart: %d, %d, %d\n", osKernelGetTickCount(), ModeABCD, Pre_ModeABCD, EndMode);
 					g_Pre_ModeABCD = g_ModeABCD;
 					g_Tar_cmd_RR = g_Tar_cmd_RL = g_Tar_cmd_FR = g_Tar_cmd_FL=0;
 					g_angle_rad_i = 0;
 					g_angle_rad_o = 0;
 
-					if(g_timerflag){
+					if(g_timerflag>3){
 
-						//printf("timerflag: %d\n", timerflag);
+						printf("g_timerflag: %d\n", g_timerflag);
 						//osTimerStart(EndModeDTimerHandle, ENDMODETIME);
 						HAL_TIM_Base_Start_IT (&htim6);
 						g_timerflag = 0;
@@ -529,7 +543,7 @@ void app()
 				//printf("%d:222osTimerStart: %d, %d, %d\n", osKernelGetTickCount(), ModeABCD, Pre_ModeABCD, EndMode);
 				if(g_Tar_cmd_v_x>LIMIT_V){g_Tar_cmd_v_x=LIMIT_V;}
 				if(g_Tar_cmd_v_x<-LIMIT_V){g_Tar_cmd_v_x=-LIMIT_V;}
-
+				printf("g_: %d %d %d %d  3\n", g_Stop_flag,g_temp_x,g_temp_y,g_temp_w);
 				//if((sin(real_angle_c)<0.1) && (sin(real_angle_c)>-0.1)){
 	//			if((Tar_cmd_v_x<0.1) && (Tar_cmd_v_x>-0.1)){
 	//				angle_rad_c = 1;
@@ -545,7 +559,10 @@ void app()
 				g_Tar_cmd_v_i = (g_Tar_cmd_v_x*sin(g_angle_rad_c)) / sin(g_angle_rad_i);
 				g_Tar_cmd_v_o = (g_Tar_cmd_v_x*sin(g_angle_rad_c)) / sin(g_angle_rad_o);
 
+				printf("dbg1 %d %d %d %d %f\n", g_Tar_cmd_FL, g_Tar_cmd_RL, g_Tar_cmd_FR, g_Tar_cmd_RR, g_Tar_cmd_v_x);
+
 				if(g_temp_w==0){
+					printf("g_Tar_cmd_v_x33: %d\n", g_Tar_cmd_v_x);
 
 					g_Tar_cmd_v_i=g_Tar_cmd_v_o=g_Tar_cmd_v_x;
 					g_angle_rad_i=g_angle_rad_o=g_angle_rad_c=0;
@@ -559,6 +576,7 @@ void app()
 					g_SteDeg[1]=0;
 					g_SteDeg[2]=0;
 					g_SteDeg[3]=0;
+
 
 				}
 
@@ -621,12 +639,13 @@ void app()
 				}
 				g_ModeABCD = 2;//B mode
 			}
-
+				printf("dbg2 %d %d %d %d %f\n", g_Tar_cmd_FL, g_Tar_cmd_RL, g_Tar_cmd_FR, g_Tar_cmd_RR, g_Tar_cmd_v_x);
 			Cal_Real_cmd();
 		}
 			if(((g_temp_x==0) && (g_temp_y==0) && (g_temp_w==0))  ||  (g_Stop_flag==0))
 			{
 
+				printf("g_44: %d %d %d %d\n", g_Stop_flag,g_temp_x,g_temp_y,g_temp_w);
 				g_ModeABCD = 4;//temp
 				g_Pre_ModeABCD = 4;//temp
 				g_Tar_cmd_RR = g_Tar_cmd_RL = g_Tar_cmd_FR = g_Tar_cmd_FL=0;
@@ -641,7 +660,7 @@ void app()
 			g_sendcanbuf[6] = VERSION_MAJOR;
 		///////////////////////////
 			printf("Cal_Real_cmd end %d\n", HAL_GetTick());
-
+			printf("g_55: %d %d %d %d\n", g_Tar_cmd_FL,g_Tar_cmd_FR,g_Tar_cmd_RL,g_Tar_cmd_RR);
 			Vel_PDOMsg(1, TxPDO0, g_Tar_cmd_FL, g_Tar_cmd_FR);
 			Vel_PDOMsg(2, TxPDO0, g_Tar_cmd_RL, g_Tar_cmd_RR);
 
@@ -653,7 +672,7 @@ void app()
 		if((tick_ms - g_tick_100ms) >= 100){//operation steering motor 3 //edit tick system
 			g_tick_100ms = tick_ms;
 
-			printf("2 cycle %d\n", tick_ms);
+			//printf("2 cycle %d\n", tick_ms);
 		}
 //
 //		if((tick_ms - tick_1000ms) >= 1000){//operation NPled 4
