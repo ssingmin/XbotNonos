@@ -15,7 +15,7 @@
 #define RES_SM	100	//SM= STEERING MOTOR
 #define LIMIT_MODE_C 300//300=50deg, 460=30deg, 280=55deg
 
-#define DELAYTIME 3//0.5s per 1
+#define DELAYTIME 4//0.5s per 1
 
 uint32_t g_tick_1ms=0;
 uint32_t g_tick_100ms=0;
@@ -117,7 +117,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)//. generate per 500m
   {
 		g_timerflag++;
 		g_EndMode++;
-		printf("TCB %d %d\n", g_timerflag, g_EndMode);
+		//printf("TCB %d %d\n", g_timerflag, g_EndMode);
   }
 }
 
@@ -405,8 +405,7 @@ void Canparsing()
 					g_Tar_cmd_w = (double)g_temp_w;
 					g_torqueSW = g_canbuf[6];
 					printf("g_temp_x: %d\n", g_temp_x);
-					//if(g_Stop_flag++>255){g_Stop_flag = 1;}
-					//Stopflagcheck(Xbot_W, 1);
+
 					g_Stop_flag++;
 
 					break;
@@ -452,6 +451,7 @@ void candataset()
 			if(g_Pre_ModeABCD!=g_ModeABCD){g_EndMode = 0;}
 			g_Pre_ModeABCD = g_ModeABCD;
 			g_Tar_cmd_RR = g_Tar_cmd_RL = g_Tar_cmd_FR = g_Tar_cmd_FL=0;
+			for(int i=0;i<4;i++){g_SteDeg[i]=rad2deg(ANGLE_VEL);}
 
 		}
 		else {
@@ -465,7 +465,7 @@ void candataset()
 			if(g_Tar_cmd_FL<-LIMIT_W){g_Tar_cmd_FL=-LIMIT_W;}
 			g_Tar_cmd_RR = g_Tar_cmd_RL = g_Tar_cmd_FR = g_Tar_cmd_FL;
 
-			for(int i=0;i<4;i++){g_SteDeg[i]=rad2deg(ANGLE_VEL);}
+			//for(int i=0;i<4;i++){g_SteDeg[i]=rad2deg(ANGLE_VEL);}
 
 		}
 	}
