@@ -87,8 +87,8 @@ void ServoMotor_writeDMA(const uint8_t* str)
     //osDelay(6);//because transmit_DMA
     HAL_NVIC_DisableIRQ(USART3_IRQn); //Rx Callback 함수 Disable
     if(HAL_UART_Transmit_DMA(&huart3,str, 48)!= HAL_OK){Error_Handler();}
-    HAL_Delay(6);//because transmit_DMA
-    HAL_NVIC_EnableIRQ(USART3_IRQn);  //Rx callback 함수 enable0
+    HAL_Delay(10);//because transmit_DMA
+    HAL_NVIC_EnableIRQ(USART3_IRQn);  //Rx callback 함수 enable
     HAL_GPIO_WritePin(RS485_DE_GPIO_Port, RS485_DE_Pin, GPIO_PIN_RESET);
 }
 

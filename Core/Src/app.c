@@ -730,10 +730,10 @@ void STProcess()//steering process
 	//origin
 	ServoMotor_writeDMA(g_buf);//use osdelay(6)*2ea
 #endif
-//	HAL_Delay(5); DataReadSteering(STMotorID1, 0xA1);
-//	HAL_Delay(5); DataReadSteering(STMotorID2, 0xA1);
-//	HAL_Delay(5); DataReadSteering(STMotorID3, 0xA1);
-//	HAL_Delay(5); DataReadSteering(STMotorID4, 0xA1);
+	HAL_Delay(5); DataReadSteering(STMotorID1, 0xA1);
+	HAL_Delay(5); DataReadSteering(STMotorID2, 0xA1);
+	HAL_Delay(5); DataReadSteering(STMotorID3, 0xA1);
+	HAL_Delay(5); DataReadSteering(STMotorID4, 0xA1);
 }
 
 void readSTmotor()
@@ -869,10 +869,10 @@ void app()
 		if((tick_ms - g_tick_100ms) >= 100)	//can parsing, calculator xyw 2
 		{
 			g_tick_100ms = tick_ms;
-			if(DRSCounter >= 4)
-			{
-				DRSCounterflag = 1;
-				DRSCounter = 0;
+//			if(DRSCounter >= 4)
+//			{
+//				DRSCounterflag = 1;
+//				DRSCounter = 0;
 				printf("%d: 1 cycle start \n", HAL_GetTick());
 
 				Canparsing();
@@ -898,22 +898,22 @@ void app()
 				Cal_Real_cmd();
 				printf("%d: Cal_Real_cmd end\n", HAL_GetTick());
 
-				DRSCounterflag = 0;
-			}
+				//DRSCounterflag = 0;
+//			}
 
 		}
 
 		if((tick_ms - g_tick_5ms) >= 5){//operation steering motor 3 //edit tick system
 			g_tick_5ms = tick_ms;
 
-			if(DRSCounterflag == 0){
-				if(DRSCounter < 4){
-					DataReadSteering(DRSCounter, 0xA1);
-					printf("%d: DRSCounter %d\n", HAL_GetTick(), DRSCounter);
-					printf("tmp_rx: "); for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", tmp_rx[DRSCounter][i]);} printf("\n");
-				}
-				DRSCounter++;
-			}
+//			if(DRSCounterflag == 0){
+//				if(DRSCounter < 4){
+//					DataReadSteering(DRSCounter, 0xA1);
+//					printf("%d: DRSCounter %d\n", HAL_GetTick(), DRSCounter);
+//					printf("tmp_rx: "); for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", tmp_rx[DRSCounter][i]);} printf("\n");
+//				}
+//				DRSCounter++;
+//			}
 			//printf("2 cycle %d\n", tick_ms);
 		}
 //
