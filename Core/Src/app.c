@@ -15,7 +15,7 @@
 #define RES_SM	100	//SM= STEERING MOTOR
 #define LIMIT_MODE_C 300//300=50deg, 460=30deg, 280=55deg
 
-#define DELAYTIME 4//0.5s per 1
+#define DELAYTIME 3//0.5s per 1
 
 uint32_t g_tick_1ms=0;
 uint32_t g_tick_100ms=0;
@@ -104,8 +104,8 @@ uint8_t g_Pre_ModeABCD = 0;
 //uint8_t g_EndMode = 2;
 //uint8_t g_timerflag = 2;
 
-uint8_t g_EndMode = 2;
-uint8_t g_timerflag = DELAYTIME+1;
+uint32_t g_EndMode = 2;
+uint32_t g_timerflag = DELAYTIME+1;
 
 int16_t g_SteDeg[4] = {0,};	//steering degree unit=0.01 degree
 
@@ -448,17 +448,11 @@ void candataset()
 	if((g_temp_w && (g_temp_x==0) && (g_temp_y==0)) || ( fabs((g_Tar_cmd_v_x*1000)/g_Tar_cmd_w)<LIMIT_MODE_C) )//MODE C
 	{
 		g_ModeABCD = 3;
-		if((g_Pre_ModeABCD!=g_ModeABCD) || (g_EndMode<4)){
+		if((g_Pre_ModeABCD!=g_ModeABCD) || (g_EndMode<DELAYTIME)){
 			if(g_Pre_ModeABCD!=g_ModeABCD){g_EndMode = 0;}
 			g_Pre_ModeABCD = g_ModeABCD;
 			g_Tar_cmd_RR = g_Tar_cmd_RL = g_Tar_cmd_FR = g_Tar_cmd_FL=0;
 
-			// if(g_timerflag){
-			// 	//HAL_TIM_Base_Start_IT (&htim6);
-
-			// 	g_timerflag = 0;
-			// 	g_EndMode = 0;
-			// }
 		}
 		else {
 			//g_ModeABCD = 3;
@@ -478,25 +472,22 @@ void candataset()
 
 	else //mode2
 	{
-		
+		//printf("%d mode21 %d \n", HAL_GetTick(), g_SteDeg[0]);
 		g_ModeABCD = 2;//B mode
-		if((g_Pre_ModeABCD!=g_ModeABCD) || (g_EndMode<4)){
+		if((g_Pre_ModeABCD!=g_ModeABCD) || (g_EndMode<DELAYTIME)){
 			if(g_Pre_ModeABCD!=g_ModeABCD){g_EndMode = 0;}
 			g_Pre_ModeABCD = g_ModeABCD;
 			g_Tar_cmd_RR = g_Tar_cmd_RL = g_Tar_cmd_FR = g_Tar_cmd_FL=0;
 			g_angle_rad_i = 0;
 			g_angle_rad_o = 0;
 			
+			g_SteDeg[0]=0;
+			g_SteDeg[1]=0;
+			g_SteDeg[2]=0;
+			g_SteDeg[3]=0;
 
-			// if(g_timerflag>DELAYTIME){
-			// 	//HAL_TIM_Base_Start_IT (&htim6);
-			// 	g_timerflag = 0;
-			// 	g_EndMode = 0;
-			// 	// printf("mode23 %d %d %d\n", g_timerflag, g_EndMode, HAL_TIM_Base_Start_IT (&htim6));
-			// }
 		}
 		else{
-			
 		if(g_Tar_cmd_v_x>LIMIT_V){g_Tar_cmd_v_x=LIMIT_V;}
 		if(g_Tar_cmd_v_x<-LIMIT_V){g_Tar_cmd_v_x=-LIMIT_V;}
 
@@ -510,7 +501,6 @@ void candataset()
 		g_Tar_cmd_v_o = (g_Tar_cmd_v_x*sin(g_angle_rad_c)) / sin(g_angle_rad_o);
 
 		if(g_temp_w==0){
-
 			g_Tar_cmd_v_i=g_Tar_cmd_v_o=g_Tar_cmd_v_x;
 			g_angle_rad_i=g_angle_rad_o=g_angle_rad_c=0;
 
@@ -527,7 +517,6 @@ void candataset()
 		}
 
 		if((g_temp_w>0) && (g_temp_x>0)){
-
 			g_Tar_cmd_FL = (int16_t)(C_60xINv2PIR * g_Tar_cmd_v_i);
 			g_Tar_cmd_RL = (int16_t)(C_60xINv2PIR * g_Tar_cmd_v_i);
 			g_Tar_cmd_FR = -(int16_t)(C_60xINv2PIR * g_Tar_cmd_v_o);
@@ -542,7 +531,6 @@ void candataset()
 		}
 
 		else if((g_temp_w<0) && (g_temp_x>0)){
-
 			g_Tar_cmd_FL = (int16_t)(C_60xINv2PIR * g_Tar_cmd_v_o);
 			g_Tar_cmd_RL = (int16_t)(C_60xINv2PIR * g_Tar_cmd_v_o);
 			g_Tar_cmd_FR = -(int16_t)(C_60xINv2PIR * g_Tar_cmd_v_i);
@@ -556,7 +544,6 @@ void candataset()
 		}
 
 		else if((g_temp_w>0) && (g_temp_x<0)){
-
 			g_Tar_cmd_FL = (int16_t)(C_60xINv2PIR * g_Tar_cmd_v_o);
 			g_Tar_cmd_RL = (int16_t)(C_60xINv2PIR * g_Tar_cmd_v_o);
 			g_Tar_cmd_FR = -(int16_t)(C_60xINv2PIR * g_Tar_cmd_v_i);
@@ -570,7 +557,6 @@ void candataset()
 		}
 
 		else if((g_temp_w<0) && (g_temp_x<0)){
-
 			g_Tar_cmd_FL = (int16_t)(C_60xINv2PIR * g_Tar_cmd_v_i);
 			g_Tar_cmd_RL = (int16_t)(C_60xINv2PIR * g_Tar_cmd_v_i);
 			g_Tar_cmd_FR = -(int16_t)(C_60xINv2PIR * g_Tar_cmd_v_o);
@@ -641,7 +627,7 @@ void STProcess()//steering process
 			if(g_SteDeg[i]>90){g_SteDeg[i]= 90;}//prevent over angle
 		}
 
-		if(pre_SteDeg[0] == g_SteDeg[0]){
+		if(pre_SteDeg[0] == HAL_GetTick(), g_SteDeg[0]){
 			set_flag = 1;
 			for(int i=0;i<4;i++){
 				end_SteDeg[i] = ((g_SteDeg[i]*MS_PER_DEG)+5) / RES_SM;//+5 is round
@@ -666,7 +652,7 @@ void STProcess()//steering process
 		DataSetSteering(g_buf, STMotorID2, Dir_Rot, g_SteDeg[1]*100, SERVO_PSMODE, TAR_RPM*10);
 		DataSetSteering(g_buf, STMotorID3, Dir_Rot^1, g_SteDeg[2]*100, SERVO_PSMODE, TAR_RPM*10);
 		DataSetSteering(g_buf, STMotorID4, Dir_Rot^1, g_SteDeg[3]*100, SERVO_PSMODE, TAR_RPM*10);
-	//	printf("%d: MM %d\n", HAL_GetTick(), g_SteDeg[0]);
+	//	printf("%d: MM %d\n", HAL_GetTick(), HAL_GetTick(), g_SteDeg[0]);
 	}
 
 	if(g_ModeABCD == 3){
