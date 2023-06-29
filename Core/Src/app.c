@@ -19,7 +19,7 @@
 
 extern uint8_t tmp_rx[4][SERVO_RXBUFLEN];
 extern int flag_rx;
-
+extern uint8_t monitorirq;
 uint32_t g_tick_1ms=0;
 uint32_t g_tick_5ms=0;
 uint32_t g_tick_100ms=0;
@@ -761,7 +761,7 @@ void readSTmotor()
 	}
 
 	if(flag_rx == 1){
-
+		printf("monitorirq: %d\n", monitorirq);
 		printf("tmparr[0]"); for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", tmparr[0][i]);} printf("\n");
 		printf("tmparr[1]"); for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", tmparr[1][i]);} printf("\n");
 		printf("tmparr[2]"); for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", tmparr[2][i]);} printf("\n");
@@ -799,7 +799,7 @@ void readSTmotor()
 			//printf("%d: angle[%d]: %03d \n", HAL_GetTick(), j, real_angle[j]);
 		}
 	}
-#if 1
+#if 0
 	if(real_angle[0]>real_angle[1]){
 		g_real_angle_i = deg2rad((double)((round((double)(real_angle[0])/100) + round((double)(real_angle[2])/100)) /2));//unit 0.01
 		g_real_angle_o = deg2rad((double)((round((double)(real_angle[1])/100) + round((double)(real_angle[3])/100)) /2));//unit 0.01

@@ -1,5 +1,7 @@
 #include "servo_motor.h"
 
+uint8_t monitorirq = 0;
+
 uint8_t Steering_Rxbuf[4][12];
 int rx_i = 0;
 char checksum_val = 0;
@@ -58,8 +60,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
 			rx_i=-1;
 			flag_rx = 1;
 		}
-		HAL_UART_Receive_IT(&huart3, tmp_rx[++rx_i], 12);
-	
+		monitorirq = HAL_UART_Receive_IT(&huart3, tmp_rx[++rx_i], 12);
 	}//SET INTERRUPT
 }
 
@@ -84,8 +85,10 @@ void ServoMotor_writeDMA(const uint8_t* str)
 {
     HAL_GPIO_WritePin(RS485_DE_GPIO_Port, RS485_DE_Pin, GPIO_PIN_SET);
     //osDelay(6);//because transmit_DMA
+    HAL_NVIC_DisableIRQ(USART3_IRQn); //Rx Callback 함수 Disable
     if(HAL_UART_Transmit_DMA(&huart3,str, 48)!= HAL_OK){Error_Handler();}
     HAL_Delay(6);//because transmit_DMA
+    HAL_NVIC_EnableIRQ(USART3_IRQn);  //Rx callback 함수 enable0
     HAL_GPIO_WritePin(RS485_DE_GPIO_Port, RS485_DE_Pin, GPIO_PIN_RESET);
 }
 
