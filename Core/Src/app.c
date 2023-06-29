@@ -15,7 +15,6 @@
 #define RES_SM	100	//SM= STEERING MOTOR
 #define LIMIT_MODE_C 300//300=50deg, 460=30deg, 280=55deg
 #define DELAYTIME 3
-//#define DELAYTIME 0
 
 uint32_t g_tick_1ms=0;
 uint32_t g_tick_100ms=0;
@@ -297,7 +296,6 @@ void Cal_Real_cmd(void)
 
 	//g_Real_cmd_v_x = C_2PIRxINv60*((tempL+tempR)/2)*fabs(cos(ANGLE_RAD_A));
 	g_Real_cmd_v_x = C_2PIRxINv60*((tempL+tempR)/2)*fabs(cos(ANGLE_RAD_A));
-	//printf("%d:g_Real_cmd_v_x 11 %f %f %f %f\n", HAL_GetTick(), g_Real_cmd_v_x, tempL, tempL, cos(ANGLE_RAD_A));
 
 	}
 	else{
@@ -409,7 +407,7 @@ void Canparsing()
 					g_Tar_cmd_v_y = (double)g_temp_y;
 					g_Tar_cmd_w = (double)g_temp_w;
 					g_torqueSW = g_canbuf[6];
-
+					printf("g_temp_x: %d\n", g_temp_x);
 					//if(g_Stop_flag++>255){g_Stop_flag = 1;}
 					//Stopflagcheck(Xbot_W, 1);
 					g_Stop_flag++;
@@ -479,9 +477,14 @@ void candataset()
 		}
 	}
 
-	else {	//mode2
+	else //mode2
+	{
+		printf("mode2\n");
+		printf("1: %d %d %d \n", g_Pre_ModeABCD, g_ModeABCD, g_EndMode);
+		printf("tar 1: %d \n", g_Tar_cmd_FL);
+		g_ModeABCD = 2;//B mode
 		if((g_Pre_ModeABCD!=g_ModeABCD) || (g_EndMode==0)){
-
+			printf("tar 2: %d \n", g_Tar_cmd_FL);
 			g_Pre_ModeABCD = g_ModeABCD;
 			g_Tar_cmd_RR = g_Tar_cmd_RL = g_Tar_cmd_FR = g_Tar_cmd_FL=0;
 			g_angle_rad_i = 0;
@@ -494,8 +497,9 @@ void candataset()
 
 			}
 		}
-		else{	//mode2
+		else{
 
+		printf("tar 3: %d \n", g_Tar_cmd_FL);
 		if(g_Tar_cmd_v_x>LIMIT_V){g_Tar_cmd_v_x=LIMIT_V;}
 		if(g_Tar_cmd_v_x<-LIMIT_V){g_Tar_cmd_v_x=-LIMIT_V;}
 
@@ -508,7 +512,7 @@ void candataset()
 		g_Tar_cmd_v_i = (g_Tar_cmd_v_x*sin(g_angle_rad_c)) / sin(g_angle_rad_i);
 		g_Tar_cmd_v_o = (g_Tar_cmd_v_x*sin(g_angle_rad_c)) / sin(g_angle_rad_o);
 
-
+		printf("tar 4: %d \n", g_Tar_cmd_FL);
 		if(g_temp_w==0){
 
 			g_Tar_cmd_v_i=g_Tar_cmd_v_o=g_Tar_cmd_v_x;
@@ -523,7 +527,6 @@ void candataset()
 			g_SteDeg[1]=0;
 			g_SteDeg[2]=0;
 			g_SteDeg[3]=0;
-
 
 		}
 
@@ -584,20 +587,20 @@ void candataset()
 			g_SteDeg[3]=rad2deg(g_angle_rad_i);
 
 		}
-		g_ModeABCD = 2;//B mode
+		printf("tar 5: %d \n", g_Tar_cmd_FL);
 	}
-	//Cal_Real_cmd();
+
 }
-	if(((g_temp_x==0) && (g_temp_y==0) && (g_temp_w==0))  ||  (g_Stop_flag==0))
+
+	if(((g_temp_x==0) && (g_temp_y==0) && (g_temp_w==0))  ||  (g_Stop_flag==0))//mode 4
 	{
 
 		g_ModeABCD = 4;//temp
 		g_Pre_ModeABCD = 4;//temp
 		g_Tar_cmd_RR = g_Tar_cmd_RL = g_Tar_cmd_FR = g_Tar_cmd_FL=0;
 
-		//for(int i=0;i<4;i++){Deg2Ste(Xbot_W,rad2deg(ANGLE_VEL), i);}
-
-		//Cal_Real_cmd();
+//		for(int i=0;i<4;i++){Deg2Ste(Xbot_W,rad2deg(ANGLE_VEL), i);}
+		for(int i=0;i<4;i++){g_SteDeg[i] = rad2deg(ANGLE_VEL);}
 
 	}
 
@@ -635,7 +638,7 @@ void STProcess()//steering process
 		if(g_SteDeg[0] == 0){//forward, rear
 //			for(int i=0;i<4;i++){Deg2Ste(Xbot_W, 0, i);}
 			for(int i=0;i<4;i++){g_SteDeg[i]= 0;}
-			printf("%d: abs %d\n", HAL_GetTick(), g_SteDeg[0]);
+		//	printf("%d: abs %d\n", HAL_GetTick(), g_SteDeg[0]);
 		}
 //		if(Tar_cmd_v_x==0&&Tar_cmd_v_y>0){Deg2Ste(Xbot_W,90); Dir_Rot=SERVO_CCW;}//left
 //		else if(Tar_cmd_v_x==0&&Tar_cmd_v_y<0){Deg2Ste(Xbot_W,90); Dir_Rot=SERVO_CW;}//right
@@ -661,8 +664,8 @@ void STProcess()//steering process
 				if(start_SteDeg[i]>end_SteDeg[i]) {g_SAngle[i] = start_SteDeg[i] - end_SteDeg[i];}
 				else if (start_SteDeg[i]<end_SteDeg[i]) {g_SAngle[i] = end_SteDeg[i] - start_SteDeg[i];}
 				start_SteDeg[i] = g_SAngle[i];
-				printf("%d: input data %d, %d, %d, %d\n", HAL_GetTick(),
-						g_SteDeg[i], g_SAngle[i], end_SteDeg[i] , start_SteDeg[i] );
+				//printf("%d: input data %d, %d, %d, %d\n", HAL_GetTick(),
+						//g_SteDeg[i], g_SAngle[i], end_SteDeg[i] , start_SteDeg[i] );
 			}
 		}
 
@@ -683,7 +686,7 @@ void STProcess()//steering process
 		DataSetSteering(g_buf, STMotorID2, Dir_Rot, g_SteDeg[1]*100, SERVO_PSMODE, TAR_RPM*10);
 		DataSetSteering(g_buf, STMotorID3, Dir_Rot^1, g_SteDeg[2]*100, SERVO_PSMODE, TAR_RPM*10);
 		DataSetSteering(g_buf, STMotorID4, Dir_Rot^1, g_SteDeg[3]*100, SERVO_PSMODE, TAR_RPM*10);
-		printf("%d: MM %d\n", HAL_GetTick(), g_SteDeg[0]);
+	//	printf("%d: MM %d\n", HAL_GetTick(), g_SteDeg[0]);
 	}
 
 	if(g_ModeABCD == 3){
@@ -720,7 +723,7 @@ void STProcess()//steering process
 		for(int i=0;i<4;i++){
 			g_SAngle[i] = ((g_SteDeg[i]*MS_PER_DEG)+5) / RES_SM;
 		}
-		//printf("Mode D\n");
+		printf("Mode D\n");
 	}
 	//osDelay(10);
 #if 0//testing
@@ -740,6 +743,9 @@ void STProcess()//steering process
 
 #else
 	//origin
+	printf("g_buf: ");
+	for(int i=0;i<48;i++){printf("%X ",g_buf[i] );}
+	printf("\n");
 	ServoMotor_writeDMA(g_buf);//use osdelay(6)*2ea
 #endif
 	HAL_Delay(5); DataReadSteering(STMotorID1, 0xA1);
