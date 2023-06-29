@@ -50,14 +50,16 @@ void ServoMotor_init()
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
-	printf("%d:HURC\n", HAL_GetTick());
+	// printf("%d:HURC\n", HAL_GetTick());
+	// printf("tmp_rx: "); for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", tmp_rx[rx_i][i]);} printf("\n");
+
 	if (huart->Instance == USART3) {
 		if(rx_i == 3){
 			rx_i=-1;
 			flag_rx = 1;
 		}
 		HAL_UART_Receive_IT(&huart3, tmp_rx[++rx_i], 12);
-
+	
 	}//SET INTERRUPT
 }
 

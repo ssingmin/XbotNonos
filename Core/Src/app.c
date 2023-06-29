@@ -7,7 +7,7 @@
 #include"app.h"
 
 #define VERSION_MAJOR 2
-#define VERSION_MINOR 3
+#define VERSION_MINOR 5
 
 #define TAR_RPM	7
 #define MS_PER_DEG	(1000/(6*TAR_RPM))
@@ -89,6 +89,7 @@ int16_t g_temp_w = 0;
 uint8_t g_torqueSW = 0;
 
 int8_t g_state_stop = 0;
+int8_t g_state_stop_tmp = 0;
 uint32_t g_Stop_flag = 0;
 
 int8_t g_sendcanbuf[8]={0,};
@@ -395,7 +396,11 @@ void Canparsing()
 					g_temp_x = (((int16_t)g_canbuf[1])<<8) | ((int16_t)g_canbuf[0])&0xff;
 					g_temp_y = (((int16_t)g_canbuf[3])<<8) | ((int16_t)g_canbuf[2])&0xff;
 					g_temp_w = (((int16_t)g_canbuf[5])<<8) | ((int16_t)g_canbuf[4])&0xff;
-					if(g_canbuf[7]==1){g_state_stop = g_canbuf[7];}
+					if(g_canbuf[7]==1){//stop mode
+						g_state_stop = g_canbuf[7];
+						g_state_stop_tmp = 1;
+						}
+					else if(g_canbuf[7]==0){g_state_stop_tmp = 0;}//move mode
 					// g_state_stop = g_canbuf[7];
 					g_Tar_cmd_v_x = (double)g_temp_x;
 					g_Tar_cmd_v_y = (double)g_temp_y;
@@ -446,7 +451,8 @@ double deg2rad(int16_t degree)
 void candataset()
 {
 	if(g_state_stop==0){g_delaytime=0;}
-	else {g_delaytime = g_delaytime=DELAYTIME;}
+	else {g_delaytime = DELAYTIME;}
+
 	if((g_temp_w && (g_temp_x==0) && (g_temp_y==0)) || ( fabs((g_Tar_cmd_v_x*1000)/g_Tar_cmd_w)<LIMIT_MODE_C) )//MODE C
 	{
 		g_ModeABCD = 3;
@@ -577,16 +583,29 @@ void candataset()
 
 }
 
-	if(((g_temp_x==0) && (g_temp_y==0) && (g_temp_w==0))  ||  (g_Stop_flag==1))//mode 4
-	{
+//	if(g_state_stop == 1)
+//	{
+//		if(((g_temp_x==0) && (g_temp_y==0) && (g_temp_w==0))  ||  (g_Stop_flag==1))//mode 4
+//		{
+//
+//			g_ModeABCD = 4;//temp
+//			g_Pre_ModeABCD = 4;//temp
+//			g_Tar_cmd_RR = g_Tar_cmd_RL = g_Tar_cmd_FR = g_Tar_cmd_FL=0;
+//
+//			for(int i=0;i<4;i++){g_SteDeg[i] = rad2deg(ANGLE_VEL);}
+//
+//		}
+//	}
+			if(g_state_stop_tmp == 1)//mode 4
+			{
 
-		g_ModeABCD = 4;//temp
-		g_Pre_ModeABCD = 4;//temp
-		g_Tar_cmd_RR = g_Tar_cmd_RL = g_Tar_cmd_FR = g_Tar_cmd_FL=0;
+				g_ModeABCD = 4;//temp
+				g_Pre_ModeABCD = 4;//temp
+				g_Tar_cmd_RR = g_Tar_cmd_RL = g_Tar_cmd_FR = g_Tar_cmd_FL=0;
 
-		for(int i=0;i<4;i++){g_SteDeg[i] = rad2deg(ANGLE_VEL);}
+				for(int i=0;i<4;i++){g_SteDeg[i] = rad2deg(ANGLE_VEL);}
 
-	}
+			}
 
 	g_sendcanbuf[7] = VERSION_MINOR;
 	g_sendcanbuf[6] = VERSION_MAJOR;
@@ -646,8 +665,8 @@ void STProcess()//steering process
 			for(int i=0;i<4;i++){
 				pre_SteDeg[i] = g_SteDeg[i];
 				send_flag = 1;
-				printf("%d: change data %d, %d, %d, %d\n", HAL_GetTick(),
-						g_SteDeg[i], g_SAngle[i], end_SteDeg[i] , start_SteDeg[i] );
+//				printf("%d: change data %d, %d, %d, %d\n", HAL_GetTick(),
+//						g_SteDeg[i], g_SAngle[i], end_SteDeg[i] , start_SteDeg[i] );
 			}
 		}
 
@@ -711,10 +730,10 @@ void STProcess()//steering process
 	//origin
 	ServoMotor_writeDMA(g_buf);//use osdelay(6)*2ea
 #endif
-	HAL_Delay(5); DataReadSteering(STMotorID1, 0xA1);
-	HAL_Delay(5); DataReadSteering(STMotorID2, 0xA1);
-	HAL_Delay(5); DataReadSteering(STMotorID3, 0xA1);
-	HAL_Delay(5); DataReadSteering(STMotorID4, 0xA1);
+//	HAL_Delay(5); DataReadSteering(STMotorID1, 0xA1);
+//	HAL_Delay(5); DataReadSteering(STMotorID2, 0xA1);
+//	HAL_Delay(5); DataReadSteering(STMotorID3, 0xA1);
+//	HAL_Delay(5); DataReadSteering(STMotorID4, 0xA1);
 }
 
 void readSTmotor()
@@ -726,13 +745,16 @@ void readSTmotor()
 
 	for(int k=0;k<4;k++){//copy data to buffer
 		for(int i=0;i<12;i++){
-			if(tmp_rx[k][i]==0xFF && tmp_rx[k][i+1]==0xFE)//parsing
+			if(tmp_rx[k][i]==0xFF && tmp_rx[k][(i+1)%12]==0xFE)//parsing
 			{
-				tempID = tmp_rx[k][i+2];
+
+				tempID = tmp_rx[k][(i+2)%12];
+				printf("tempID: %d %d\n",tempID,(i+2)%12);
 				for(int j=0;j<12;j++)
 				{
-					if(i+j<12){tmparr[tempID][j]=tmp_rx[k][i+j];}
-					else {tmparr[tempID][j]=tmp_rx[k][i+j-12];}
+//					if(i+j<12){tmparr[tempID][j]=tmp_rx[k][i+j];}
+//					else {tmparr[tempID][j]=tmp_rx[k][i+j-12];}
+					tmparr[tempID][j]=tmp_rx[k][(i+j)%12];
 				}
 			}
 		}
@@ -740,13 +762,28 @@ void readSTmotor()
 
 	if(flag_rx == 1){
 
-		for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", tmparr[0][i]);} printf("\n");
-		for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", tmparr[1][i]);} printf("\n");
-		for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", tmparr[2][i]);} printf("\n");
-		for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", tmparr[3][i]);} printf("\n");
+		printf("tmparr[0]"); for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", tmparr[0][i]);} printf("\n");
+		printf("tmparr[1]"); for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", tmparr[1][i]);} printf("\n");
+		printf("tmparr[2]"); for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", tmparr[2][i]);} printf("\n");
+		printf("tmparr[3]"); for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", tmparr[3][i]);} printf("\n");
 
 		flag_rx = 0;
 	}
+
+//	for(int j=0;j<4;j++){
+//		rx_checksum[j] = tmparr[j][2]+tmparr[j][3];//id+length
+//
+//		for(int i=5;i<tmparr[j][3]+4;i++) {
+//			rx_checksum[j] += tmparr[j][i];
+//		}//checksum ~(Packet 2 + Packet 3 + Packet '5' + ?? + Packet N) [1byte]
+//		rx_checksum[j] ^= 0xff;//invert value. checksum done.
+//
+//
+//		if(tmparr[j][4]==rx_checksum[j]){
+//			real_angle[j] = tmparr[j][7]*0x100+tmparr[j][8];
+//			//printf("%d: angle[%d]: %03d \n", HAL_GetTick(), j, real_angle[j]);
+//		}
+//	}
 
 	for(int j=0;j<4;j++){
 		rx_checksum[j] = tmparr[j][2]+tmparr[j][3];//id+length
@@ -762,8 +799,7 @@ void readSTmotor()
 			//printf("%d: angle[%d]: %03d \n", HAL_GetTick(), j, real_angle[j]);
 		}
 	}
-
-
+#if 1
 	if(real_angle[0]>real_angle[1]){
 		g_real_angle_i = deg2rad((double)((round((double)(real_angle[0])/100) + round((double)(real_angle[2])/100)) /2));//unit 0.01
 		g_real_angle_o = deg2rad((double)((round((double)(real_angle[1])/100) + round((double)(real_angle[3])/100)) /2));//unit 0.01
@@ -773,19 +809,32 @@ void readSTmotor()
 		g_real_angle_i = deg2rad((double)((round((double)(real_angle[1])/100) + round((double)(real_angle[3])/100)) /2));//unit 0.01
 		g_real_angle_o = deg2rad((double)((round((double)(real_angle[0])/100) + round((double)(real_angle[2])/100)) /2));//unit 0.01
 	}
+#else
+	if(real_angle[0]>real_angle[1]){
+		g_real_angle_i = deg2rad((double)((round(((double)real_angle[0])/100) + round(((double)real_angle[2])/100)) /2));//unit 0.01
+		g_real_angle_o = deg2rad((double)((round(((double)real_angle[1])/100) + round(((double)real_angle[3])/100)) /2));//unit 0.01
+	}
+
+	else{
+		g_real_angle_i = deg2rad((double)((round(((double)real_angle[1])/100) + round(((double)real_angle[3])/100)) /2));//unit 0.01
+		g_real_angle_o = deg2rad((double)((round(((double)real_angle[0])/100) + round(((double)real_angle[2])/100)) /2));//unit 0.01
+	}
+#endif
 
 	g_real_angle_c = (atan2(230*tan(g_real_angle_i),230+(209.5*tan(g_real_angle_i)))
 				+ atan2(230*tan(g_real_angle_o),230-(209.5*tan(g_real_angle_o))))/2;
 
-	printf("%d: angle %f %f %f %f %f\n", HAL_GetTick(), atan2(230*tan(g_real_angle_i),230+(209.5*tan(g_real_angle_i))),
-			atan2(230*tan(g_real_angle_o),230-(209.5*tan(g_real_angle_o))), g_real_angle_c, g_real_angle_i, g_real_angle_o);
+//	printf("%d: angle %f %f %f %f %f %f %f\n", HAL_GetTick(), atan2(230*tan(g_real_angle_i),230+(209.5*tan(g_real_angle_i))),
+//			atan2(230*tan(g_real_angle_o),230-(209.5*tan(g_real_angle_o))), g_real_angle_c, g_real_angle_i, g_real_angle_o);
+	printf("%d: angle %f %f %f\n", HAL_GetTick(),  g_real_angle_c, g_real_angle_i, g_real_angle_o);
 
 }
 
 
 void app()
 {
-
+	int32_t DRSCounter = 0;	//DataReadSteering Counter
+	int8_t DRSCounterflag = 0;	//DataReadSteering Counter
 
 	HAL_Delay(1000);
 
@@ -801,11 +850,13 @@ void app()
 
 	HAL_UART_Receive_IT(&huart3, tmp_rx[0] , 12);
 
+	HAL_Delay(1000);
 	while(1){
 
 
 		uint32_t tick_ms = HAL_GetTick();
 		///////////////////////////
+
 		if((tick_ms - g_tick_1000ms) >= 1000){//status led toogle 1
 			g_tick_1000ms = tick_ms;
 
@@ -815,39 +866,54 @@ void app()
 		///////////////////////////
 
 		///////////////////////////
-		if((tick_ms - g_tick_100ms) >= 100){//can parsing, calculator xyw 2
+		if((tick_ms - g_tick_100ms) >= 100)	//can parsing, calculator xyw 2
+		{
 			g_tick_100ms = tick_ms;
-			printf("%d: 1 cycle start \n", HAL_GetTick());
+			if(DRSCounter >= 4)
+			{
+				DRSCounterflag = 1;
+				DRSCounter = 0;
+				printf("%d: 1 cycle start \n", HAL_GetTick());
 
-			Canparsing();
+				Canparsing();
 
-			printf("%d: parsing end\n", HAL_GetTick());
-
-
-		///////////////////////////
-
-			candataset();
-			printf("%d: candataset end \n", HAL_GetTick());
-
-			candatasend();
-			printf("%d: sendCan end\n", HAL_GetTick());
+				printf("%d: parsing end\n", HAL_GetTick());
 
 
-			STProcess();
-			printf("%d: STProcess end\n", HAL_GetTick());
+			///////////////////////////
 
-			readSTmotor();
-			printf("%d: readSTmotor end\n", HAL_GetTick());
+				candataset();
+				printf("%d: candataset end \n", HAL_GetTick());
 
-			Cal_Real_cmd();
-			printf("%d: Cal_Real_cmd end\n", HAL_GetTick());
+				candatasend();
+				printf("%d: sendCan end\n", HAL_GetTick());
 
+
+				STProcess();
+				printf("%d: STProcess end\n", HAL_GetTick());
+
+				readSTmotor();
+				printf("%d: readSTmotor end\n", HAL_GetTick());
+
+				Cal_Real_cmd();
+				printf("%d: Cal_Real_cmd end\n", HAL_GetTick());
+
+				DRSCounterflag = 0;
+			}
 
 		}
 
-		if((tick_ms - g_tick_100ms) >= 100){//operation steering motor 3 //edit tick system
-			g_tick_100ms = tick_ms;
+		if((tick_ms - g_tick_5ms) >= 5){//operation steering motor 3 //edit tick system
+			g_tick_5ms = tick_ms;
 
+			if(DRSCounterflag == 0){
+				if(DRSCounter < 4){
+					DataReadSteering(DRSCounter, 0xA1);
+					printf("%d: DRSCounter %d\n", HAL_GetTick(), DRSCounter);
+					printf("tmp_rx: "); for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", tmp_rx[DRSCounter][i]);} printf("\n");
+				}
+				DRSCounter++;
+			}
 			//printf("2 cycle %d\n", tick_ms);
 		}
 //
