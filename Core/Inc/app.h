@@ -20,5 +20,6 @@
 #include "app_can.h"
 #include "app_ws2812b.h"
 #include "app_fan.h"
+#include "math.h"
 
 #endif /* INC_APP_H_ */

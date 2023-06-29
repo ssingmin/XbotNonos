@@ -17,7 +17,11 @@
 
 #define DELAYTIME 4//0.5s per 1
 
+extern uint8_t tmp_rx[4][SERVO_RXBUFLEN];
+extern int flag_rx;
+
 uint32_t g_tick_1ms=0;
+uint32_t g_tick_5ms=0;
 uint32_t g_tick_100ms=0;
 uint32_t g_tick_500ms=0;
 uint32_t g_tick_1000ms=0;
@@ -105,7 +109,8 @@ uint8_t g_Pre_ModeABCD = 0;
 //uint8_t g_timerflag = 2;
 
 uint32_t g_EndMode = 2;
-uint32_t g_timerflag = DELAYTIME+1;
+uint32_t g_timerflag = 2;
+uint32_t g_delaytime = 4;//0.5s per 1
 
 int16_t g_SteDeg[4] = {0,};	//steering degree unit=0.01 degree
 
@@ -351,7 +356,7 @@ void Cal_Real_cmd(void)
 	{
 		g_Real_cmd_w = -(CONSTANT_C_AxC_V*((tempL-tempR)/2));
 	}
-	else//mode B
+	else	//mode B
 	{
 //		g_Real_cmd_w = (C_4PIRxINv60WB*((tempL+tempR)/2)*fabs(sin(g_angle_rad_c)))*1000;
 
@@ -359,8 +364,8 @@ void Cal_Real_cmd(void)
 		else if	((tempL>tempR)  &&  ((tempL>0) && (tempR>0))){g_Real_cmd_w = -((g_Real_cmd_v_x*sin(g_real_angle_c))/230)*1000;}
 		else if	((tempL<tempR)  &&  ((tempL<0) && (tempR<0))){g_Real_cmd_w = -((g_Real_cmd_v_x*sin(g_real_angle_c))/230)*1000;}
 		else if	((tempL>tempR)  &&  ((tempL<0) && (tempR<0))){g_Real_cmd_w = ((g_Real_cmd_v_x*sin(g_real_angle_c))/230)*1000;}
-		printf("%d:g_Real_cmd_ww 552 %d %d %d %d %d\n", HAL_GetTick(),
-				(int)g_Real_cmd_w, (int )g_Real_cmd_v_x, (int)(g_real_angle_c*1000), (int)(g_real_angle_i*1000), (int)(g_real_angle_o*1000));
+		printf("%d:g_Real_cmd_ww 552 %d %d %d %d %d %f %f\n", HAL_GetTick(),
+				(int)g_Real_cmd_w, (int )g_Real_cmd_v_x, (int)(g_real_angle_c*1000), (int)(g_real_angle_i*1000), (int)(g_real_angle_o*1000), tempL, tempR);
 	}
 
 	g_sendcanbuf[5] = (((int16_t)(g_Real_cmd_w)))>>8 & 0xff;
@@ -372,15 +377,6 @@ void Cal_Real_cmd(void)
 }
 
 
-void tmpbufdbg()
-{
-	printf("\n buf ");
-	for(int i=0;i<8;i++)
-	{
-		printf("%d ", g_canbuf[i]);
-	}
-	printf("  end\n");
-}
 void Canparsing()
 {
 	if(FLAG_RxCplt>0)	//real time, check stdid, extid
@@ -399,7 +395,8 @@ void Canparsing()
 					g_temp_x = (((int16_t)g_canbuf[1])<<8) | ((int16_t)g_canbuf[0])&0xff;
 					g_temp_y = (((int16_t)g_canbuf[3])<<8) | ((int16_t)g_canbuf[2])&0xff;
 					g_temp_w = (((int16_t)g_canbuf[5])<<8) | ((int16_t)g_canbuf[4])&0xff;
-					g_state_stop = g_canbuf[7];
+					if(g_canbuf[7]==1){g_state_stop = g_canbuf[7];}
+					// g_state_stop = g_canbuf[7];
 					g_Tar_cmd_v_x = (double)g_temp_x;
 					g_Tar_cmd_v_y = (double)g_temp_y;
 					g_Tar_cmd_w = (double)g_temp_w;
@@ -441,18 +438,24 @@ int16_t rad2deg(double radian)
     return (int16_t)(radian*180/MATH_PI);
 }
 
+double deg2rad(int16_t degree)
+{
+    return (double)(degree*MATH_PI/180);
+}
 
 void candataset()
 {
+	if(g_state_stop==0){g_delaytime=0;}
+	else {g_delaytime = g_delaytime=DELAYTIME;}
 	if((g_temp_w && (g_temp_x==0) && (g_temp_y==0)) || ( fabs((g_Tar_cmd_v_x*1000)/g_Tar_cmd_w)<LIMIT_MODE_C) )//MODE C
 	{
 		g_ModeABCD = 3;
-		if((g_Pre_ModeABCD!=g_ModeABCD) || (g_EndMode<DELAYTIME)){
+		if((g_Pre_ModeABCD!=g_ModeABCD) || (g_EndMode<g_delaytime)){
 			if(g_Pre_ModeABCD!=g_ModeABCD){g_EndMode = 0;}
 			g_Pre_ModeABCD = g_ModeABCD;
 			g_Tar_cmd_RR = g_Tar_cmd_RL = g_Tar_cmd_FR = g_Tar_cmd_FL=0;
 			for(int i=0;i<4;i++){g_SteDeg[i]=rad2deg(ANGLE_VEL);}
-
+			g_state_stop = 0;
 		}
 		else {
 			//g_ModeABCD = 3;
@@ -474,7 +477,7 @@ void candataset()
 	{
 		//printf("%d mode21 %d \n", HAL_GetTick(), g_SteDeg[0]);
 		g_ModeABCD = 2;//B mode
-		if((g_Pre_ModeABCD!=g_ModeABCD) || (g_EndMode<DELAYTIME)){
+		if((g_Pre_ModeABCD!=g_ModeABCD) || (g_EndMode<g_delaytime)){
 			if(g_Pre_ModeABCD!=g_ModeABCD){g_EndMode = 0;}
 			g_Pre_ModeABCD = g_ModeABCD;
 			g_Tar_cmd_RR = g_Tar_cmd_RL = g_Tar_cmd_FR = g_Tar_cmd_FL=0;
@@ -486,6 +489,7 @@ void candataset()
 			g_SteDeg[2]=0;
 			g_SteDeg[3]=0;
 
+			g_state_stop = 0;
 		}
 		else{
 		if(g_Tar_cmd_v_x>LIMIT_V){g_Tar_cmd_v_x=LIMIT_V;}
@@ -573,14 +577,13 @@ void candataset()
 
 }
 
-	if(((g_temp_x==0) && (g_temp_y==0) && (g_temp_w==0))  ||  (g_Stop_flag==0))//mode 4
+	if(((g_temp_x==0) && (g_temp_y==0) && (g_temp_w==0))  ||  (g_Stop_flag==1))//mode 4
 	{
 
 		g_ModeABCD = 4;//temp
 		g_Pre_ModeABCD = 4;//temp
 		g_Tar_cmd_RR = g_Tar_cmd_RL = g_Tar_cmd_FR = g_Tar_cmd_FL=0;
 
-//		for(int i=0;i<4;i++){Deg2Ste(Xbot_W,rad2deg(ANGLE_VEL), i);}
 		for(int i=0;i<4;i++){g_SteDeg[i] = rad2deg(ANGLE_VEL);}
 
 	}
@@ -714,6 +717,72 @@ void STProcess()//steering process
 	HAL_Delay(5); DataReadSteering(STMotorID4, 0xA1);
 }
 
+void readSTmotor()
+{
+	uint8_t tmparr[4][12] = {0};
+	uint8_t tempID = 0;
+	uint8_t rx_checksum[4] = {0,};
+	uint16_t real_angle[4] = {0,};
+
+	for(int k=0;k<4;k++){//copy data to buffer
+		for(int i=0;i<12;i++){
+			if(tmp_rx[k][i]==0xFF && tmp_rx[k][i+1]==0xFE)//parsing
+			{
+				tempID = tmp_rx[k][i+2];
+				for(int j=0;j<12;j++)
+				{
+					if(i+j<12){tmparr[tempID][j]=tmp_rx[k][i+j];}
+					else {tmparr[tempID][j]=tmp_rx[k][i+j-12];}
+				}
+			}
+		}
+	}
+
+	if(flag_rx == 1){
+
+		for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", tmparr[0][i]);} printf("\n");
+		for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", tmparr[1][i]);} printf("\n");
+		for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", tmparr[2][i]);} printf("\n");
+		for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", tmparr[3][i]);} printf("\n");
+
+		flag_rx = 0;
+	}
+
+	for(int j=0;j<4;j++){
+		rx_checksum[j] = tmparr[j][2]+tmparr[j][3];//id+length
+
+		for(int i=5;i<tmparr[j][3]+4;i++) {
+			rx_checksum[j] += tmparr[j][i];
+		}//checksum ~(Packet 2 + Packet 3 + Packet '5' + ?? + Packet N) [1byte]
+		rx_checksum[j] ^= 0xff;//invert value. checksum done.
+
+
+		if(tmparr[j][4]==rx_checksum[j]){
+			real_angle[j] = tmparr[j][7]*0x100+tmparr[j][8];
+			//printf("%d: angle[%d]: %03d \n", HAL_GetTick(), j, real_angle[j]);
+		}
+	}
+
+
+	if(real_angle[0]>real_angle[1]){
+		g_real_angle_i = deg2rad((double)((round((double)(real_angle[0])/100) + round((double)(real_angle[2])/100)) /2));//unit 0.01
+		g_real_angle_o = deg2rad((double)((round((double)(real_angle[1])/100) + round((double)(real_angle[3])/100)) /2));//unit 0.01
+	}
+
+	else{
+		g_real_angle_i = deg2rad((double)((round((double)(real_angle[1])/100) + round((double)(real_angle[3])/100)) /2));//unit 0.01
+		g_real_angle_o = deg2rad((double)((round((double)(real_angle[0])/100) + round((double)(real_angle[2])/100)) /2));//unit 0.01
+	}
+
+	g_real_angle_c = (atan2(230*tan(g_real_angle_i),230+(209.5*tan(g_real_angle_i)))
+				+ atan2(230*tan(g_real_angle_o),230-(209.5*tan(g_real_angle_o))))/2;
+
+	printf("%d: angle %f %f %f %f %f\n", HAL_GetTick(), atan2(230*tan(g_real_angle_i),230+(209.5*tan(g_real_angle_i))),
+			atan2(230*tan(g_real_angle_o),230-(209.5*tan(g_real_angle_o))), g_real_angle_c, g_real_angle_i, g_real_angle_o);
+
+}
+
+
 void app()
 {
 
@@ -729,6 +798,8 @@ void app()
 
 	fanInit();
 	fanOn(100);
+
+	HAL_UART_Receive_IT(&huart3, tmp_rx[0] , 12);
 
 	while(1){
 
@@ -746,26 +817,31 @@ void app()
 		///////////////////////////
 		if((tick_ms - g_tick_100ms) >= 100){//can parsing, calculator xyw 2
 			g_tick_100ms = tick_ms;
-			printf("1 cycle start %d\n", HAL_GetTick());
+			printf("%d: 1 cycle start \n", HAL_GetTick());
 
 			Canparsing();
 
-			printf("parsing end %d\n", HAL_GetTick());
+			printf("%d: parsing end\n", HAL_GetTick());
 
 
 		///////////////////////////
 
 			candataset();
-			printf("candataset end %d\n", HAL_GetTick());
+			printf("%d: candataset end \n", HAL_GetTick());
 
 			candatasend();
-			printf("sendCan end %d\n", HAL_GetTick());
+			printf("%d: sendCan end\n", HAL_GetTick());
 
-			Cal_Real_cmd();
-			printf("Cal_Real_cmd end %d\n", HAL_GetTick());
 
 			STProcess();
-			printf("STProcess end %d\n", HAL_GetTick());
+			printf("%d: STProcess end\n", HAL_GetTick());
+
+			readSTmotor();
+			printf("%d: readSTmotor end\n", HAL_GetTick());
+
+			Cal_Real_cmd();
+			printf("%d: Cal_Real_cmd end\n", HAL_GetTick());
+
 
 		}
 

@@ -15,7 +15,7 @@ enum XbotRW {
 	Xbot_W = 1,
 };
 
-#define LIMIT_W 70
+#define LIMIT_W 200
 #define LIMIT_V 500
 
 #define ENDMODETIME 1000
