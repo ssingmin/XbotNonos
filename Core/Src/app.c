@@ -287,10 +287,10 @@ void Canparsing()
 					g_temp_y = (((int16_t)g_canbuf[3])<<8) | ((int16_t)g_canbuf[2])&0xff;
 					g_temp_w = (((int16_t)g_canbuf[5])<<8) | ((int16_t)g_canbuf[4])&0xff;
 					if(g_canbuf[7]==1){//stop mode
-						g_state_stop = g_canbuf[7];
-						g_state_stop_tmp = 1;
+						g_state_stop = 1;
+						g_modeDflag = 1;
 						}
-					else if(g_canbuf[7]==0){g_state_stop_tmp = 0;}//move mode
+					else if(g_canbuf[7]==0){g_modeDflag = 0;}//move mode
 					// g_state_stop = g_canbuf[7];
 					g_Tar_cmd_v_x = (double)g_temp_x;
 					g_Tar_cmd_v_y = (double)g_temp_y;
@@ -340,13 +340,14 @@ double deg2rad(int16_t degree)
 
 void candataset()
 {
-	if(g_state_stop==0){g_delaytime=0;}
+	if(g_state_stop==1){g_delaytime=0;}
+
 	else {g_delaytime = DELAYTIME;}
 
 	if((g_temp_w && (g_temp_x==0) && (g_temp_y==0)) || ( fabs((g_Tar_cmd_v_x*1000)/g_Tar_cmd_w)<LIMIT_MODE_C) )//MODE C
 	{
 		g_ModeABCD = 3;
-		if((g_Pre_ModeABCD!=g_ModeABCD) || (g_EndMode<g_delaytime)){
+		if(((g_Pre_ModeABCD == 4)&&(g_Pre_ModeABCD!=g_ModeABCD)) || (g_EndMode<g_delaytime)){
 			if(g_Pre_ModeABCD!=g_ModeABCD){g_EndMode = 0;}
 			g_Pre_ModeABCD = g_ModeABCD;
 			g_Tar_cmd_RR = g_Tar_cmd_RL = g_Tar_cmd_FR = g_Tar_cmd_FL=0;
@@ -363,7 +364,7 @@ void candataset()
 			if(g_Tar_cmd_FL>LIMIT_W){g_Tar_cmd_FL=LIMIT_W;}
 			if(g_Tar_cmd_FL<-LIMIT_W){g_Tar_cmd_FL=-LIMIT_W;}
 			g_Tar_cmd_RR = g_Tar_cmd_RL = g_Tar_cmd_FR = g_Tar_cmd_FL;
-
+			for(int i=0;i<4;i++){g_SteDeg[i]=rad2deg(ANGLE_VEL);}
 			//for(int i=0;i<4;i++){g_SteDeg[i]=rad2deg(ANGLE_VEL);}
 
 		}
@@ -373,7 +374,7 @@ void candataset()
 	{
 		//printf("%d mode21 %d \n", HAL_GetTick(), g_SteDeg[0]);
 		g_ModeABCD = 2;//B mode
-		if((g_Pre_ModeABCD!=g_ModeABCD) || (g_EndMode<g_delaytime)){
+		if(((g_Pre_ModeABCD == 4)&&(g_Pre_ModeABCD!=g_ModeABCD)) || (g_EndMode<g_delaytime-1)){
 			if(g_Pre_ModeABCD!=g_ModeABCD){g_EndMode = 0;}
 			g_Pre_ModeABCD = g_ModeABCD;
 			g_Tar_cmd_RR = g_Tar_cmd_RL = g_Tar_cmd_FR = g_Tar_cmd_FL=0;
@@ -473,20 +474,7 @@ void candataset()
 
 }
 
-//	if(g_state_stop == 1)
-//	{
-//		if(((g_temp_x==0) && (g_temp_y==0) && (g_temp_w==0))  ||  (g_Stop_flag==1))//mode 4
-//		{
-//
-//			g_ModeABCD = 4;//temp
-//			g_Pre_ModeABCD = 4;//temp
-//			g_Tar_cmd_RR = g_Tar_cmd_RL = g_Tar_cmd_FR = g_Tar_cmd_FL=0;
-//
-//			for(int i=0;i<4;i++){g_SteDeg[i] = rad2deg(ANGLE_VEL);}
-//
-//		}
-//	}
-			if(g_state_stop_tmp == 1)//mode 4
+			if(g_modeDflag == 1)//mode 4
 			{
 
 				g_ModeABCD = 4;//temp

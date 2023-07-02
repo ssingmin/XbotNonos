@@ -19,7 +19,7 @@
 #define RES_SM	100	//SM= STEERING MOTOR
 #define LIMIT_MODE_C 300//300=50deg, 460=30deg, 280=55deg
 
-#define DELAYTIME 10//0.5s per 1
+#define DELAYTIME 4//0.5s per 1
 
 
 

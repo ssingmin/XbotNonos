@@ -83,7 +83,7 @@ int16_t g_temp_w = 0;
 uint8_t g_torqueSW = 0;
 
 int8_t g_state_stop = 0;
-int8_t g_state_stop_tmp = 0;
+int8_t g_modeDflag = 0;
 uint32_t g_Stop_flag = 0;
 
 int8_t g_sendcanbuf[8]={0,};

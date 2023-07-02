@@ -62,7 +62,7 @@ extern int16_t g_temp_w;
 extern uint8_t g_torqueSW;
 
 extern int8_t g_state_stop;
-extern int8_t g_state_stop_tmp;
+extern int8_t g_modeDflag;
 extern uint32_t g_Stop_flag;
 
 extern int8_t g_sendcanbuf[8];
