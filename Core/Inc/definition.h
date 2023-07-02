@@ -11,7 +11,7 @@
 #include "can.h"
 
 #define VERSION_MAJOR 2
-#define VERSION_MINOR 6
+#define VERSION_MINOR 7
 
 #define TAR_RPM	7
 #define MS_PER_DEG	(1000/(6*TAR_RPM))
