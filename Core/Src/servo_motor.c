@@ -52,9 +52,8 @@ void ServoMotor_init()
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
-	// printf("%d:HURC\n", HAL_GetTick());
-	// printf("tmp_rx: "); for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", tmp_rx[rx_i][i]);} printf("\n");
 
+	//don't use printf()
 	if (huart->Instance == USART3) {
 		if(rx_i == 3){
 			rx_i=-1;
@@ -64,18 +63,16 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
 	}//SET INTERRUPT
 }
 
+
 void ServoMotor_write(const uint8_t* str)
 {
     HAL_GPIO_WritePin(RS485_DE_GPIO_Port, RS485_DE_Pin, GPIO_PIN_SET);
     if(Read_flag == 1){
-    	HAL_NVIC_DisableIRQ(USART3_IRQn); //Rx Callback 함수 Disable
     	HAL_UART_Transmit(&huart3, str, 6, 100);
-    	HAL_NVIC_EnableIRQ(USART3_IRQn);  //Rx callback 함수 enable
     }
     else {
-    	HAL_NVIC_DisableIRQ(USART3_IRQn); //Rx Callback 함수 Disable
-    	HAL_UART_Transmit(&huart3, str, SERVO_BUFLEN, 100);
-    	HAL_NVIC_EnableIRQ(USART3_IRQn);  //Rx callback 함수 enable
+    	HAL_UART_Transmit(&huart3, str, 48, 100);
+    	HAL_Delay(10);
     }
 
     HAL_GPIO_WritePin(RS485_DE_GPIO_Port, RS485_DE_Pin, GPIO_PIN_RESET);

@@ -21,5 +21,5 @@
 #include "app_ws2812b.h"
 #include "app_fan.h"
 #include "math.h"
-
+#include "gloval.h"
 #endif /* INC_APP_H_ */

@@ -10,6 +10,19 @@
 
 #include "can.h"
 
+#define VERSION_MAJOR 2
+#define VERSION_MINOR 6
+
+#define TAR_RPM	7
+#define MS_PER_DEG	(1000/(6*TAR_RPM))
+//#define MS_PER_DEG	11.11
+#define RES_SM	100	//SM= STEERING MOTOR
+#define LIMIT_MODE_C 300//300=50deg, 460=30deg, 280=55deg
+
+#define DELAYTIME 10//0.5s per 1
+
+
+
 enum XbotRW {
 	Xbot_R = 0,
 	Xbot_W = 1,

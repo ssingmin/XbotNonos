@@ -6,116 +6,6 @@
  */
 #include"app.h"
 
-#define VERSION_MAJOR 2
-#define VERSION_MINOR 5
-
-#define TAR_RPM	7
-#define MS_PER_DEG	(1000/(6*TAR_RPM))
-//#define MS_PER_DEG	11.11
-#define RES_SM	100	//SM= STEERING MOTOR
-#define LIMIT_MODE_C 300//300=50deg, 460=30deg, 280=55deg
-
-#define DELAYTIME 4//0.5s per 1
-
-extern uint8_t tmp_rx[4][SERVO_RXBUFLEN];
-extern int flag_rx;
-extern uint8_t monitorirq;
-uint32_t g_tick_1ms=0;
-uint32_t g_tick_5ms=0;
-uint32_t g_tick_100ms=0;
-uint32_t g_tick_500ms=0;
-uint32_t g_tick_1000ms=0;
-
-uint8_t g_PS_SIGx_Pin = 0;	//0000 4321
-
-
-uint8_t g_buf[48]={	 1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12,		//1 front right
-					13, 14, 15, 16, 17, 18, 19, 20, 21, 22,	23, 24,		//2 front left
-					25, 26, 27, 28, 29, 30, 31, 32,	33, 34, 35, 36,		//3 rear right
-					37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48	};	//4 rear left
-
-MappingPar vel_RxPDO0={{0x60ff,0,0,0},//index //target speed
-						{0x03,0,0,0},//subindex //left and rigt target speed combination
-						{0x20,0,0,0},//length //32bit
-						0x01,//option//event timer
-						500};//option_time //500
-
-MappingPar vel_TxPDO0={{0x606C,0,0,0},//index //target speed
-						{0x03,0,0,0},//subindex //left and rigt target speed combination
-						{0x20,0,0,0},//length //32bit
-						0x01,//option
-						200};//option_time //inhibit time 10000, event time 1000 = 500ms
-//						200};//option_time //inhibit time 10000, event time 1000 = 500ms
-
-MappingPar vel_TxPDO1={{0x603F,0,0,0},//index //error code
-						{0x00,0,0,0},//subindex //left and rigt target speed combination
-						{0x10,0,0,0},//length //16bit
-						0x00,//option
-						2000};//option_time //inhibit time 10000, event time 1000 = 500ms
-
-uint32_t STM_FT_ID[4][2] = {	{312,135},	//id1 cw = 3.12, ccw = 1.35 degree
-							{0,400},	//id2 cw = 0.0, ccw = 4.0 degree
-							{0,500},	//id3 cw = 0.0, ccw = 5.0 degree
-							{400,100}};	//id4 cw = 4.0, ccw = 1.0 degree
-
-int16_t g_Tmp_cmd_FL = 0;
-int16_t g_Tmp_cmd_FR = 0;
-int16_t g_Tmp_cmd_RL= 0;
-int16_t g_Tmp_cmd_RR = 0;
-
-double g_angle_rad_c;
-double g_angle_rad_i;
-double g_angle_rad_o;
-
-double g_Real_cmd_v_x = 0;
-double g_Real_cmd_v_y = 0;
-double g_Real_cmd_w = 0;
-
-double g_real_angle_c;
-double g_real_angle_i;
-double g_real_angle_o;
-
-
-double g_Tar_cmd_v_x = 0;
-double g_Tar_cmd_v_i = 0;
-double g_Tar_cmd_v_o = 0;
-double g_Tar_cmd_v_y = 0;
-double g_Tar_cmd_w = 0;
-
-int16_t g_temp_x = 0;
-int16_t g_temp_y = 0;
-int16_t g_temp_w = 0;
-
-uint8_t g_torqueSW = 0;
-
-int8_t g_state_stop = 0;
-int8_t g_state_stop_tmp = 0;
-uint32_t g_Stop_flag = 0;
-
-int8_t g_sendcanbuf[8]={0,};
-
-int8_t g_canbuf[8]={0,};
-
-uint32_t g_CanId = 0;
-
-int16_t g_Tar_cmd_FL = 0;//Front Left
-int16_t g_Tar_cmd_FR = 0;//Front Right
-int16_t g_Tar_cmd_RL= 0;//Rear Left
-int16_t g_Tar_cmd_RR = 0;//Rear Right
-
-uint8_t g_ModeABCD = 4;//4 is stop mode
-uint8_t g_Pre_ModeABCD = 0;
-
-//uint8_t g_EndMode = 2;
-//uint8_t g_timerflag = 2;
-
-uint32_t g_EndMode = 2;
-uint32_t g_timerflag = 2;
-uint32_t g_delaytime = 4;//0.5s per 1
-
-int16_t g_SteDeg[4] = {0,};	//steering degree unit=0.01 degree
-
-int32_t g_SAngle[4] = {0,};
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)//. generate per 500ms
 {
@@ -176,7 +66,7 @@ void SMotorSet()
 		HAL_Delay(10);
 
 		if((i%20)==0){
-			ServoMotor_writeDMA(g_buf);//servo init. must done init within 500*20ms
+			ServoMotor_write(g_buf);//servo init. must done init within 500*20ms
 			printf("%d ", i);
 		}
 
@@ -185,28 +75,28 @@ void SMotorSet()
 			g_PS_SIGx_Pin &= ~(1); printf(" PS_SIG1_stop.\n");
 			DataSetSteering(g_buf, 0, SERVO_CCW, 0, 0, 30);
 			EndInit |= 1;
-			ServoMotor_writeDMA(g_buf);//servo init. must done init within 500*20ms
+			ServoMotor_write(g_buf);//servo init. must done init within 500*20ms
 		}
 
 		if(g_PS_SIGx_Pin&2){//2ch init
 			g_PS_SIGx_Pin &= ~(2); printf(" PS_SIG2_stop.\n");
 			DataSetSteering(g_buf, 1, SERVO_CCW, 0, 0, 30);
 			EndInit |= 2;
-			ServoMotor_writeDMA(g_buf);//servo init. must done init within 500*20ms
+			ServoMotor_write(g_buf);//servo init. must done init within 500*20ms
 		}
 
 		if(g_PS_SIGx_Pin&4){//3ch init
 			g_PS_SIGx_Pin &= ~(4); printf(" PS_SIG3_stop.\n");
 			DataSetSteering(g_buf, 2, SERVO_CCW, 0, 0, 30);
 			EndInit |= 4;
-			ServoMotor_writeDMA(g_buf);//servo init. must done init within 500*20ms
+			ServoMotor_write(g_buf);//servo init. must done init within 500*20ms
 		}
 
 		if(g_PS_SIGx_Pin&8){//4ch init
 			g_PS_SIGx_Pin &= ~(8); printf(" PS_SIG4_stop.\n");
 			DataSetSteering(g_buf, 3, SERVO_CCW, 0, 0, 30);
 			EndInit |= 8;
-			ServoMotor_writeDMA(g_buf);//servo init. must done init within 500*20ms
+			ServoMotor_write(g_buf);//servo init. must done init within 500*20ms
 
 			printf("EndInit %d\n", EndInit);
 		}
@@ -241,7 +131,7 @@ void SMotorSet()
 	}
 
 	for(int i=0;i<10;i++){
-		ServoMotor_writeDMA(g_buf);//servo init. must done init within 500*20ms
+		ServoMotor_write(g_buf);//servo init. must done init within 500*20ms
 		HAL_Delay(500);
 		}
 
@@ -258,7 +148,7 @@ void SMotorSet()
 	}
 
 	for(int i=0;i<10;i++){
-		ServoMotor_writeDMA(g_buf);//servo init. must done init within 500*20ms
+		ServoMotor_write(g_buf);//servo init. must done init within 500*20ms
 		HAL_Delay(500);
 		}
 
@@ -713,7 +603,7 @@ void STProcess()//steering process
 
 #if 0//testing
 	if((send_flag==1) && (set_flag==1)){
-		ServoMotor_writeDMA(g_buf);//use osdelay(6)*2ea
+		ServoMotor_write(g_buf);//use osdelay(6)*2ea
 		send_flag = 0;
 		set_flag = 0;
 		for(int i=0;i<4;i++){
@@ -728,17 +618,21 @@ void STProcess()//steering process
 
 #else
 	//origin
-	ServoMotor_writeDMA(g_buf);//use osdelay(6)*2ea
+	ServoMotor_write(g_buf);//use osdelay(6)*2ea
 #endif
-	HAL_Delay(5); DataReadSteering(STMotorID1, 0xA1);
-	HAL_Delay(5); DataReadSteering(STMotorID2, 0xA1);
-	HAL_Delay(5); DataReadSteering(STMotorID3, 0xA1);
-	HAL_Delay(5); DataReadSteering(STMotorID4, 0xA1);
+//	HAL_Delay(5); DataReadSteering(STMotorID1, 0xA1);
+//	HAL_Delay(5); DataReadSteering(STMotorID2, 0xA1);
+//	HAL_Delay(5); DataReadSteering(STMotorID3, 0xA1);
+//	HAL_Delay(5); DataReadSteering(STMotorID4, 0xA1);
+//	DataReadSteering(STMotorID1, 0xA1);
+//	DataReadSteering(STMotorID2, 0xA1);
+//	DataReadSteering(STMotorID3, 0xA1);
+//	DataReadSteering(STMotorID4, 0xA1);
 }
 
 void readSTmotor()
 {
-	uint8_t tmparr[4][12] = {0};
+//	uint8_t g_tmparr[4][12] = {0};
 	uint8_t tempID = 0;
 	uint8_t rx_checksum[4] = {0,};
 	uint16_t real_angle[4] = {0,};
@@ -747,14 +641,13 @@ void readSTmotor()
 		for(int i=0;i<12;i++){
 			if(tmp_rx[k][i]==0xFF && tmp_rx[k][(i+1)%12]==0xFE)//parsing
 			{
-
-				tempID = tmp_rx[k][(i+2)%12];
-				printf("tempID: %d %d\n",tempID,(i+2)%12);
+//				tempID = tmp_rx[k][(i+2)%12];
+//				printf("tempID: %d %d\n",tempID,(i+2)%12);
 				for(int j=0;j<12;j++)
 				{
-//					if(i+j<12){tmparr[tempID][j]=tmp_rx[k][i+j];}
-//					else {tmparr[tempID][j]=tmp_rx[k][i+j-12];}
-					tmparr[tempID][j]=tmp_rx[k][(i+j)%12];
+//					if(i+j<12){g_tmparr[tempID][j]=tmp_rx[k][i+j];}
+//					else {g_tmparr[tempID][j]=tmp_rx[k][i+j-12];}
+					g_tmparr[k][j]=tmp_rx[k][(i+j)%12];
 				}
 			}
 		}
@@ -762,41 +655,28 @@ void readSTmotor()
 
 	if(flag_rx == 1){
 		printf("monitorirq: %d\n", monitorirq);
-		printf("tmparr[0]"); for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", tmparr[0][i]);} printf("\n");
-		printf("tmparr[1]"); for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", tmparr[1][i]);} printf("\n");
-		printf("tmparr[2]"); for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", tmparr[2][i]);} printf("\n");
-		printf("tmparr[3]"); for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", tmparr[3][i]);} printf("\n");
+		printf("g_tmparr[0]"); for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", g_tmparr[0][i]);} printf("\n");
+		printf("g_tmparr[1]"); for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", g_tmparr[1][i]);} printf("\n");
+		printf("g_tmparr[2]"); for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", g_tmparr[2][i]);} printf("\n");
+		printf("g_tmparr[3]"); for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", g_tmparr[3][i]);} printf("\n");
 
 		flag_rx = 0;
 	}
 
-//	for(int j=0;j<4;j++){
-//		rx_checksum[j] = tmparr[j][2]+tmparr[j][3];//id+length
-//
-//		for(int i=5;i<tmparr[j][3]+4;i++) {
-//			rx_checksum[j] += tmparr[j][i];
-//		}//checksum ~(Packet 2 + Packet 3 + Packet '5' + ?? + Packet N) [1byte]
-//		rx_checksum[j] ^= 0xff;//invert value. checksum done.
-//
-//
-//		if(tmparr[j][4]==rx_checksum[j]){
-//			real_angle[j] = tmparr[j][7]*0x100+tmparr[j][8];
-//			//printf("%d: angle[%d]: %03d \n", HAL_GetTick(), j, real_angle[j]);
-//		}
-//	}
+
 
 	for(int j=0;j<4;j++){
-		rx_checksum[j] = tmparr[j][2]+tmparr[j][3];//id+length
+		rx_checksum[j] = g_tmparr[j][2]+g_tmparr[j][3];//id+length
 
-		for(int i=5;i<tmparr[j][3]+4;i++) {
-			rx_checksum[j] += tmparr[j][i];
+		for(int i=5;i<12;i++) {
+			rx_checksum[j] += g_tmparr[j][i];
 		}//checksum ~(Packet 2 + Packet 3 + Packet '5' + ?? + Packet N) [1byte]
 		rx_checksum[j] ^= 0xff;//invert value. checksum done.
 
 
-		if(tmparr[j][4]==rx_checksum[j]){
-			real_angle[j] = tmparr[j][7]*0x100+tmparr[j][8];
-			//printf("%d: angle[%d]: %03d \n", HAL_GetTick(), j, real_angle[j]);
+		if(g_tmparr[j][4]==rx_checksum[j]){
+			real_angle[g_tmparr[j][2]] = g_tmparr[j][7]*0x100+g_tmparr[j][8];
+			printf("%d: angle1[%d]: %03d \n", HAL_GetTick(), g_tmparr[j][2], g_tmparr[j][7]*0x100+g_tmparr[j][8]);
 		}
 	}
 #if 0
@@ -830,15 +710,22 @@ void readSTmotor()
 
 }
 
+void ST_DisableIRQ()
+{
+	HAL_NVIC_DisableIRQ(EXTI4_IRQn);
+	HAL_NVIC_DisableIRQ(EXTI9_5_IRQn);
+}
 
 void app()
 {
 	int32_t DRSCounter = 0;	//DataReadSteering Counter
-	int8_t DRSCounterflag = 0;	//DataReadSteering Counter
+	int8_t DRSCounterflag = 0;	//DataReadSteering Counter flag
 
 	HAL_Delay(1000);
 
 	SMotorSet();
+
+	ST_DisableIRQ();
 
 	CancommSet();
 
@@ -869,10 +756,10 @@ void app()
 		if((tick_ms - g_tick_100ms) >= 100)	//can parsing, calculator xyw 2
 		{
 			g_tick_100ms = tick_ms;
-//			if(DRSCounter >= 4)
-//			{
-//				DRSCounterflag = 1;
-//				DRSCounter = 0;
+			if(DRSCounter >= 4)
+			{
+				DRSCounterflag = 1;
+				DRSCounter = 0;
 				printf("%d: 1 cycle start \n", HAL_GetTick());
 
 				Canparsing();
@@ -898,23 +785,24 @@ void app()
 				Cal_Real_cmd();
 				printf("%d: Cal_Real_cmd end\n", HAL_GetTick());
 
-				//DRSCounterflag = 0;
-//			}
+				DRSCounterflag = 0;
+			}
 
 		}
 
-		if((tick_ms - g_tick_5ms) >= 5){//operation steering motor 3 //edit tick system
-			g_tick_5ms = tick_ms;
+		if((tick_ms - g_tick_10ms) >= 20){//operation steering motor 3 //edit tick system
+			g_tick_10ms = tick_ms;
 
-//			if(DRSCounterflag == 0){
-//				if(DRSCounter < 4){
-//					DataReadSteering(DRSCounter, 0xA1);
-//					printf("%d: DRSCounter %d\n", HAL_GetTick(), DRSCounter);
-//					printf("tmp_rx: "); for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", tmp_rx[DRSCounter][i]);} printf("\n");
-//				}
-//				DRSCounter++;
-//			}
-			//printf("2 cycle %d\n", tick_ms);
+			if(DRSCounterflag == 0){
+				if(DRSCounter < 4){
+					DataReadSteering(DRSCounter, 0xA1);
+					HAL_Delay(10);
+					printf("%d: DRSCounter %d \n", HAL_GetTick(), DRSCounter);
+					printf("tmp_rx: "); for(int i=0;i<SERVO_RXBUFLEN;i++){printf("%02x ", tmp_rx[DRSCounter][i]);} printf("\n");
+				}
+				DRSCounter++;
+			}
+			printf("2 cycle %d\n", tick_ms);
 		}
 //
 //		if((tick_ms - tick_1000ms) >= 1000){//operation NPled 4

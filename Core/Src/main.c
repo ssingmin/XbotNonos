@@ -25,10 +25,6 @@
 #include "usart.h"
 #include "gpio.h"
 
-#include <stdio.h>
-#include "stm32f4xx.h"
-#include "core_cm4.h"
-
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
@@ -52,7 +48,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-volatile uint32_t sysTickCounter = 0;  // SysTick ???���?? �?? ???�� �???��
+volatile uint32_t sysTickCounter = 0;  // SysTick ???���??? �??? ???�� �????��
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -65,14 +61,14 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN 0 */
 
 //void SysTick_Init(void) {
-//  SysTick->LOAD = SysTick_LOAD_RELOAD_Msk;  // 최�? 값으�?? ?��?��
-//  SysTick->VAL = 0;                         // 초기 �?? ?��?��
-//  SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk |  // ?��?�� ?��?���?? CPU ?��?�� ?��?��
-//                  SysTick_CTRL_ENABLE_Msk;      // SysTick ???���?? ?��?��?��
+//  SysTick->LOAD = SysTick_LOAD_RELOAD_Msk;  // 최�? 값으�??? ?��?��
+//  SysTick->VAL = 0;                         // 초기 �??? ?��?��
+//  SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk |  // ?��?�� ?��?���??? CPU ?��?�� ?��?��
+//                  SysTick_CTRL_ENABLE_Msk;      // SysTick ???���??? ?��?��?��
 //}
 //
 //void SysTick_Handler(void) {
-//  sysTickCounter++;  // SysTick ???���?? �?? 증�?
+//  sysTickCounter++;  // SysTick ???���??? �??? 증�?
 //}
 
 //int _write(int file, char *ptr, int len)
